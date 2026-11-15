@@ -1,0 +1,20 @@
+id,name,type,parentId,county,city,latitude,longitude
+"county-montserrado","Montserrado","County","","Montserrado","",6.328,-10.806
+"city-monrovia","Monrovia","City","county-montserrado","Montserrado","Monrovia",6.328,-10.806
+"district-greater-monrovia","Greater Monrovia","District","city-monrovia","Montserrado","Monrovia",6.328,-10.806
+"community-west-point","West Point","Community","district-greater-monrovia","Montserrado","Monrovia",6.328,-10.806
+"market-west-point-market","West Point Market","Market","community-west-point","Montserrado","Monrovia",6.328,-10.806
+"city-paynesville","Paynesville","City","county-montserrado","Montserrado","Paynesville",6.288,-10.707
+"district-paynesville-district","Paynesville District","District","city-paynesville","Montserrado","Paynesville",6.288,-10.707
+"community-red-light","Red Light","Community","district-paynesville-district","Montserrado","Paynesville",6.288,-10.707
+"market-red-light-market","Red Light Market","Market","community-red-light","Montserrado","Paynesville",6.288,-10.707
+"county-margibi","Margibi","County","","Margibi","",6.529,-10.354
+"city-kakata","Kakata","City","county-margibi","Margibi","Kakata",6.529,-10.354
+"district-kakata-district","Kakata District","District","city-kakata","Margibi","Kakata",6.529,-10.354
+"community-kakata-central","Kakata Central","Community","district-kakata-district","Margibi","Kakata",6.529,-10.354
+"market-kakata-market","Kakata Market","Market","community-kakata-central","Margibi","Kakata",6.529,-10.354
+"county-grand-bassa","Grand Bassa","County","","Grand Bassa","",5.881,-10.043
+"city-buchanan","Buchanan","City","county-grand-bassa","Grand Bassa","Buchanan",5.881,-10.043
+"district-buchanan-district","Buchanan District","District","city-buchanan","Grand Bassa","Buchanan",5.881,-10.043
+"community-bassa-community","Bassa Community","Community","district-buchanan-district","Grand Bassa","Buchanan",5.881,-10.043
+"market-buchanan-market","Buchanan Market","Market","community-bassa-community","Grand Bassa","Buchanan",5.881,-10.043
