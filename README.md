@@ -24,7 +24,9 @@ The deployment pipeline runs `npm run build`. No build, test, type-check, or dev
 
 ## Environment variables
 
-Initial administrator and email delivery settings were skipped. The unauthenticated workspace therefore continues to show clearly labelled sample reports, dashboard results, and maps; it does not grant mock administrator permissions or create a default password. To enable the first real account, set `SUPER_ADMIN_USERNAME` and `SUPER_ADMIN_PASSWORD`. Set `RESEND_API_KEY`, `EMAIL_FROM`, and `WEEKLY_SUMMARY_TO` to enable actual weekly emails. Until then, Settings displays a labelled sample email, and the scheduled function returns a preview response without contacting an email provider. Existing accounts continue working even if bootstrap settings are removed. These settings can be supplied later; they are not required to explore the preview.
+The application requires sign-in before displaying any workspace, dashboard, reports, maps, or administrative screens. Guests cannot browse sample data or submit feedback. Super Admins create accounts and manage roles and access from **Users & roles**; public registration is disabled. To enable the first real administrator, configure `SUPER_ADMIN_USERNAME` and `SUPER_ADMIN_PASSWORD`. Existing accounts continue working if bootstrap settings are removed. Without an existing account or completed bootstrap configuration, the portal stays on the sign-in screen.
+
+Set `RESEND_API_KEY`, `EMAIL_FROM`, and `WEEKLY_SUMMARY_TO` to enable weekly emails. Until then, authenticated Settings displays a labelled sample email, and the scheduled function returns a preview response without contacting an email provider.
 
 | Variable               | Purpose                                                                                                                                                     |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
