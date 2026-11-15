@@ -103,3 +103,9 @@ export const userInput = z.object({
   active: z.boolean().optional(),
   password: z.string().max(72).optional(),
 });
+
+export const registrationInput = z.object({
+  name: z.string().trim().min(1).max(160),
+  username: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(10).max(72).refine(v => Buffer.byteLength(v) <= 72),
+});

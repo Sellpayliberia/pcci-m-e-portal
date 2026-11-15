@@ -2053,6 +2053,8 @@ function ChartPanel({ title, children }: any) {
   );
 }
 function Login({ onClose, onLogin, required = false }: any) {
+  const [register, setRegister] = useState(() => new URLSearchParams(window.location.search).get("register") === "1");
+  const [message, setMessage] = useState("");
   const [configuration, setConfiguration] = useState<any>(null);
   useEffect(() => {
     api("/config")
@@ -2083,20 +2085,21 @@ function Login({ onClose, onLogin, required = false }: any) {
           <Flag size={26} />
         </span>
         <div className="eyebrow">PRESIDENTIAL CLEAN CITIES INITIATIVE</div>
-        <h2>{reset ? "Recover your account" : "Welcome to your workspace."}</h2>
+        <h2>{reset ? "Recover your account" : register ? "Request portal access" : "Welcome to your workspace."}</h2>
         <p>
           {reset
             ? "Contact your Super Admin for a secure password reset."
-            : "Sign in to report, verify, and track progress across Liberia."}
+            : register ? "Create an account for review by the Super Admin." : "Sign in to report, verify, and track progress across Liberia."}
         </p>
         {configuration?.administratorBootstrapConfigured === false &&
           !reset && (
             <div className="notice">
               Initial administrator setup is incomplete. Existing accounts can
-              still sign in. Access is restricted to accounts created by a Super Admin.
+              still sign in. Contact webmasterliberia@gmail.com for assistance.
             </div>
           )}
-        {!reset && <p>Authorized users only. Contact your Super Admin to request an account.</p>}
+        {!reset && <p>New accounts require approval from webmasterliberia@gmail.com before accessing the portal.</p>}
+        {message && <div className="notice" role="status">{message}</div>}
         {reset ? (
           <>
             <div className="notice">
@@ -2116,7 +2119,13 @@ function Login({ onClose, onLogin, required = false }: any) {
               setError("");
               const f = new FormData(e.currentTarget);
               try {
-                onLogin(await api("/login", "POST", Object.fromEntries(f)));
+                if (register) {
+                  const result = await api("/register", "POST", Object.fromEntries(f));
+                  setMessage(result.message);
+                  setRegister(false);
+                } else {
+                  onLogin(await api("/login", "POST", Object.fromEntries(f)));
+                }
               } catch (e: any) {
                 setError(e.message);
               } finally {
@@ -2124,13 +2133,17 @@ function Login({ onClose, onLogin, required = false }: any) {
               }
             }}
           >
-            <Field label="Username">
+            {register && <Field label="Full name"><input name="name" required maxLength={160} autoComplete="name" /></Field>}
+            <Field label={register ? "Email address" : "Email or username"}>
               <input
+                key={register ? "register-email" : "login-user"}
+                type={register ? "email" : "text"}
+                maxLength={254}
                 autoFocus
                 required
                 name="username"
                 autoComplete="username"
-                placeholder="Your assigned username"
+                placeholder={register ? "you@example.com" : "Your email or assigned username"}
               />
             </Field>
             <Field label="Password">
@@ -2138,15 +2151,21 @@ function Login({ onClose, onLogin, required = false }: any) {
                 required
                 name="password"
                 type="password"
-                autoComplete="current-password"
-                placeholder="Enter your password"
+                autoComplete={register ? "new-password" : "current-password"}
+                minLength={register ? 10 : undefined}
+                maxLength={register ? 72 : undefined}
+                placeholder={register ? "At least 10 characters" : "Enter your password"}
               />
             </Field>
             {error && <div className="error">{error}</div>}
             <Button disabled={busy} type="submit">
-              {busy ? "Signing in…" : "Sign in to portal"}
+              {busy ? "Please wait…" : register ? "Submit registration" : "Sign in to portal"}
               <ArrowRight size={17} />
             </Button>
+            <a className="forgot text-button" href={register ? "/" : "/?register=1"}
+              onClick={(e) => { e.preventDefault(); setRegister(!register); setError(""); setMessage(""); }}>
+              {register ? "Back to sign in" : "Register a new account"}
+            </a>
             <button
               className="forgot text-button"
               type="button"
@@ -3144,7 +3163,7 @@ function UsersPanel({ user, notify }: any) {
                 "password",
                 edit.id
                   ? "New password (leave blank to retain)"
-                  : "Initial password (12+ characters)",
+                  : "Initial password (10+ characters)",
               ],
               ["county", "County scope (blank = all)"],
               ["city", "City scope (blank = all)"],
@@ -3153,7 +3172,7 @@ function UsersPanel({ user, notify }: any) {
                 <input
                   value={edit[k] || ""}
                   type={k === "password" ? "password" : "text"}
-                  minLength={k === "password" ? 12 : undefined}
+                  minLength={k === "password" ? 10 : undefined}
                   required={
                     !edit.id && ["name", "username", "password"].includes(k)
                   }
@@ -3204,7 +3223,7 @@ function UsersPanel({ user, notify }: any) {
                   </small>
                 </td>
                 <td>
-                  <Badge>{u.active ? "Active" : "Inactive"}</Badge>
+                  <Badge>{u.approvalStatus === "Pending" ? "Pending approval" : u.active ? "Active" : "Inactive"}</Badge>
                 </td>
                 <td>
                   <div className="row">
@@ -3230,7 +3249,7 @@ function UsersPanel({ user, notify }: any) {
                         }
                       }}
                     >
-                      {u.active ? "Deactivate" : "Activate"}
+                      {u.approvalStatus === "Pending" ? "Approve access" : u.active ? "Deactivate" : "Activate"}
                     </Button>
                     <button
                       className="icon-button"

@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   county: text("county"),
   city: text("city"),
   active: boolean("active").notNull().default(true),
+  approvalStatus: text("approval_status").notNull().default("Approved"),
   sessionVersion: integer("session_version").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -74,4 +75,10 @@ export const files = pgTable("files", {
   name: text("name").notNull(),
   type: text("type").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Server-only configuration; never expose through an API response.
+export const authConfig = pgTable("auth_config", {
+  id: text("id").primaryKey(),
+  signingKey: text("signing_key").notNull(),
 });
