@@ -109,7 +109,7 @@ app.post("/api/login", async (req, res) => {
         .status(503)
         .json({
           error:
-            "Administrator sign-in is not configured yet. You can explore the preview workspace; official access becomes available after initial administrator setup.",
+            "Administrator setup is incomplete. Contact the portal administrator to finish secure account configuration.",
         });
   }
   await bootstrap();
@@ -164,6 +164,26 @@ app.post("/api/login", async (req, res) => {
   await audit(u, "Signed in");
   res.json(clean(u));
 });
+app.use("/api", async (req, res, next) => {
+  let payload;
+  try {
+    ({ payload } = await jwtVerify(req.cookies.pcci_session || "", secret(), {
+      algorithms: ["HS256"],
+    }));
+  } catch {
+    return res
+      .status(401)
+      .json({ error: "Please sign in. Sessions expire after 30 minutes." });
+  }
+  const [u] = await db.select().from(users).where(eq(users.id, payload.sub));
+  if (!u?.active || u.sessionVersion !== payload.v)
+    return res
+      .status(401)
+      .json({ error: "Your account session expired. Please sign in again." });
+  req.user = u;
+  await audit(u, `${req.method} ${req.path}`);
+  next();
+});
 app.post("/api/feedback", async (req, res) => {
   const { title, description, community } = req.body;
   if (
@@ -198,28 +218,8 @@ app.post("/api/feedback", async (req, res) => {
     data: { description, community },
     status: "Open",
   });
-  await audit(null, "Public feedback received", id);
+  await audit(req.user, "Feedback received", id);
   res.json({ id });
-});
-app.use("/api", async (req, res, next) => {
-  let payload;
-  try {
-    ({ payload } = await jwtVerify(req.cookies.pcci_session || "", secret(), {
-      algorithms: ["HS256"],
-    }));
-  } catch {
-    return res
-      .status(401)
-      .json({ error: "Please sign in. Sessions expire after 30 minutes." });
-  }
-  const [u] = await db.select().from(users).where(eq(users.id, payload.sub));
-  if (!u?.active || u.sessionVersion !== payload.v)
-    return res
-      .status(401)
-      .json({ error: "Your account session expired. Please sign in again." });
-  req.user = u;
-  await audit(u, `${req.method} ${req.path}`);
-  next();
 });
 app.get("/api/me", (req, res) => res.json(clean(req.user)));
 app.post("/api/logout", async (req, res) => {

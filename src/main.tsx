@@ -88,8 +88,6 @@ import { QRCodeSVG } from "qrcode.react";
 import Papa from "papaparse";
 import { Button } from "./components/ui/button";
 import {
-  demoReports,
-  demoLocations,
   targets,
   roles,
   aggregate,
@@ -170,8 +168,8 @@ function Select({
 function App() {
   const [page, setPage] = useState("Dashboard"),
     [user, setUser] = useState<any>(null),
-    [reports, setReports] = useState<any[]>(demoReports),
-    [locations, setLocations] = useState<any[]>(demoLocations),
+    [reports, setReports] = useState<any[]>([]),
+    [locations, setLocations] = useState<any[]>([]),
     [ready, setReady] = useState(false),
     [login, setLogin] = useState(false),
     [mobile, setMobile] = useState(false),
@@ -209,8 +207,8 @@ function App() {
     const expired = () => {
       setUser(null);
       setModal(null);
-      setReports(demoReports);
-      setLocations(demoLocations);
+      setReports([]);
+      setLocations([]);
       setLogin(true);
     };
     window.addEventListener("pcci-session-expired", expired);
@@ -243,8 +241,8 @@ function App() {
       timer = setTimeout(() => {
         api("/logout", "POST").catch(() => {});
         setUser(null);
-        setReports(demoReports);
-        setLocations(demoLocations);
+        setReports([]);
+        setLocations([]);
         setModal(null);
         notify("Your session timed out. Please sign in again.");
       }, 29 * 60000);
@@ -347,6 +345,26 @@ function App() {
           <div className="loading-chart" />
         </div>
       </div>
+    );
+  if (!user)
+    return (
+      <Login
+        required
+        onLogin={async (u: any) => {
+          setUser(u);
+          setPage("Dashboard");
+          setFilters({});
+          setSearch("");
+          setLogin(false);
+          try {
+            const [r, l] = await Promise.all([api("/reports"), api("/locations")]);
+            setReports(r);
+            setLocations(l);
+          } catch (e: any) {
+            notify(e.message);
+          }
+        }}
+      />
     );
   return (
     <div className="app">
@@ -716,8 +734,8 @@ function App() {
                   await api("/logout", "POST");
                 } catch {}
                 setUser(null);
-                setReports(demoReports);
-                setLocations(demoLocations);
+                setReports([]);
+                setLocations([]);
                 changePage("Dashboard");
               }}
             />
@@ -2034,7 +2052,7 @@ function ChartPanel({ title, children }: any) {
     </section>
   );
 }
-function Login({ onClose, onLogin }: any) {
+function Login({ onClose, onLogin, required = false }: any) {
   const [configuration, setConfiguration] = useState<any>(null);
   useEffect(() => {
     api("/config")
@@ -2052,13 +2070,15 @@ function Login({ onClose, onLogin }: any) {
         aria-modal="true"
         aria-label="Sign in to PCCI"
       >
-        <button
-          className="modal-x icon-button"
-          aria-label="Close login"
-          onClick={onClose}
-        >
-          <X size={20} />
-        </button>
+        {!required && (
+          <button
+            className="modal-x icon-button"
+            aria-label="Close login"
+            onClick={onClose}
+          >
+            <X size={20} />
+          </button>
+        )}
         <span className="login-mark">
           <Flag size={26} />
         </span>
@@ -2072,11 +2092,11 @@ function Login({ onClose, onLogin }: any) {
         {configuration?.administratorBootstrapConfigured === false &&
           !reset && (
             <div className="notice">
-              Initial administrator setup is not configured. Existing accounts
-              can still sign in. Use the preview workspace to explore sample
-              data.
+              Initial administrator setup is incomplete. Existing accounts can
+              still sign in. Access is restricted to accounts created by a Super Admin.
             </div>
           )}
+        {!reset && <p>Authorized users only. Contact your Super Admin to request an account.</p>}
         {reset ? (
           <>
             <div className="notice">
