@@ -1,4 +1,5 @@
 import express from "express";
+import { registerCustomForms } from "./custom-forms.mjs";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
@@ -9,7 +10,7 @@ import { getStore } from "@netlify/blobs";
 import * as schema from "../../db/schema.ts";
 import { reportInput, userInput, registrationInput } from "./validation.mjs";
 import { seedLocations } from "./seed.mjs";
-const { users, locations, reports, audits, meal, attempts, files, authConfig } = schema;
+const { users, locations, reports, audits, meal, attempts, files, authConfig, customRecords } = schema;
 const db = drizzle({ schema });
 const app = express();
 app.disable("x-powered-by");
@@ -248,6 +249,7 @@ app.post("/api/feedback", async (req, res) => {
   await audit(req.user, "Feedback received", id);
   res.json({ id });
 });
+registerCustomForms(app, db, audit);
 app.get("/api/me", (req, res) => res.json(clean(req.user)));
 app.post("/api/logout", async (req, res) => {
   await db
@@ -350,10 +352,11 @@ app.delete("/api/users/:id", async (req, res) => {
     .from(reports)
     .where(eq(reports.ownerId, req.params.id))
     .limit(1);
-  if (r)
+  const [customOwned] = await db.select({ id: customRecords.id }).from(customRecords).where(eq(customRecords.ownerId, req.params.id)).limit(1);
+  if (r || customOwned)
     return res.status(409).json({
       error:
-        "This user owns reports. Deactivate the account to preserve the audit trail.",
+        "This user owns programme records. Deactivate the account to preserve the audit trail.",
     });
   await db.delete(users).where(eq(users.id, req.params.id));
   res.json({ ok: true });
