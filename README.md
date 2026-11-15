@@ -33,7 +33,7 @@ Set `RESEND_API_KEY`, `EMAIL_FROM`, and `WEEKLY_SUMMARY_TO` to enable weekly ema
 | `SESSION_SECRET`       | Cryptographically random JWT signing secret, at least 32 characters. When absent, a cryptographically random key is generated once and persisted in the server-only auth_config table. |
 | `SUPER_ADMIN_USERNAME` | Optional bootstrap Super Admin email override; defaults to webmasterliberia@gmail.com. Case-insensitive; stored in lowercase.                                                                                  |
 | `SUPER_ADMIN_PASSWORD` | Initial password, at least 10 characters and no more than 72 UTF-8 bytes because bcrypt truncates beyond that limit. Store as a secret.                     |
-| `SUPER_ADMIN_NAME`     | Optional display name; defaults to PCCI Administrator.                                                                                                      |
+| `SUPER_ADMIN_NAME`     | Optional display name; defaults to Administrator.                                                                                                      |
 | `RESEND_API_KEY`       | Secret Resend API key for scheduled weekly summary delivery.                                                                                                |
 | `EMAIL_FROM`           | Sender email address on a verified Resend domain.                                                                                                           |
 | `WEEKLY_SUMMARY_TO`    | Comma-separated, authorized recipients for the national summary.                                                                                            |

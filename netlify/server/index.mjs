@@ -71,7 +71,7 @@ async function bootstrap() {
         .values({
           id: randomUUID(),
           username: bootstrapUsername,
-          name: process.env.SUPER_ADMIN_NAME || "PCCI Administrator",
+          name: process.env.SUPER_ADMIN_NAME || "Administrator",
           passwordHash: await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD, 12),
           role: "Super Admin",
           active: true,
