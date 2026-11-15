@@ -82,3 +82,10 @@ export const authConfig = pgTable("auth_config", {
   id: text("id").primaryKey(),
   signingKey: text("signing_key").notNull(),
 });
+
+// Isolated practice workspace; never included in operational report queries.
+export const trainingWorkspaces = pgTable("training_workspaces", {
+  userId: text("user_id").primaryKey().references(() => users.id),
+  reports: jsonb("reports").notNull(),
+  version: integer("version").notNull().default(1),
+});

@@ -1,4 +1,5 @@
 import express from "express";
+import { registerTraining } from "./training.mjs";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
@@ -248,6 +249,7 @@ app.post("/api/feedback", async (req, res) => {
   await audit(req.user, "Feedback received", id);
   res.json({ id });
 });
+registerTraining(app, db);
 app.get("/api/me", (req, res) => res.json(clean(req.user)));
 app.post("/api/logout", async (req, res) => {
   await db

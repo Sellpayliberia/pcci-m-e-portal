@@ -1,3 +1,4 @@
+import { Training } from "./Training";
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -115,6 +116,7 @@ const nav = [
   { label: "Map & coverage", icon: MapPinned },
   { label: "Analytics", icon: BarChart3 },
   { label: "MEAL tools", icon: BookOpen },
+  { label: "Training", icon: Lightbulb },
 ];
 function isOverdue(r: any) {
   return (
@@ -709,6 +711,7 @@ function App() {
           {page === "Analytics" && (
             <Analytics reports={filtered} locations={locations} />
           )}
+          {page === "Training" && <Training user={user} onLogin={() => setLogin(true)} />}
           {page === "MEAL tools" && (
             <Meal user={user} notify={notify} onLogin={() => setLogin(true)} />
           )}
