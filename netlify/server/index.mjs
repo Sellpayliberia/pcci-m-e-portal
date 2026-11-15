@@ -58,10 +58,10 @@ async function bootstrap() {
       .limit(1);
     if (!existing) {
       if (
-        process.env.SUPER_ADMIN_PASSWORD.length < 12 ||
+        process.env.SUPER_ADMIN_PASSWORD.length < 10 ||
         Buffer.byteLength(process.env.SUPER_ADMIN_PASSWORD) > 72
       )
-        throw Error("Initial password must be at least 12 characters");
+        throw Error("Initial password must be at least 10 characters");
       await db
         .insert(users)
         .values({
@@ -70,6 +70,9 @@ async function bootstrap() {
           name: process.env.SUPER_ADMIN_NAME || "PCCI Administrator",
           passwordHash: await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD, 12),
           role: "Super Admin",
+          active: true,
+          county: null,
+          city: null,
         })
         .onConflictDoNothing();
     }
@@ -232,10 +235,10 @@ app.post("/api/logout", async (req, res) => {
 });
 app.post("/api/password", async (req, res) => {
   if (
-    String(req.body.password || "").length < 12 ||
+    String(req.body.password || "").length < 10 ||
     Buffer.byteLength(req.body.password || "") > 72
   )
-    return res.status(400).json({ error: "Use at least 12 characters" });
+    return res.status(400).json({ error: "Use at least 10 characters" });
   if (
     !(await bcrypt.compare(
       String(req.body.currentPassword || ""),
@@ -264,12 +267,12 @@ app.post("/api/users", async (req, res) => {
     !b.name ||
     !b.username ||
     !roles.includes(b.role) ||
-    String(b.password || "").length < 12 ||
+    String(b.password || "").length < 10 ||
     Buffer.byteLength(b.password || "") > 72
   )
     return res.status(400).json({
       error:
-        "Name, username, valid role, and a password of at least 12 characters are required",
+        "Name, username, valid role, and a password of at least 10 characters are required",
     });
   await db.insert(users).values({
     id: randomUUID(),
@@ -300,8 +303,8 @@ app.patch("/api/users/:id", async (req, res) => {
   for (const k of ["name", "role", "county", "city", "active"])
     if (b[k] !== undefined) values[k] = b[k];
   if (b.password) {
-    if (b.password.length < 12 || Buffer.byteLength(b.password) > 72)
-      return res.status(400).json({ error: "Use at least 12 characters" });
+    if (b.password.length < 10 || Buffer.byteLength(b.password) > 72)
+      return res.status(400).json({ error: "Use at least 10 characters" });
     values.passwordHash = await bcrypt.hash(b.password, 12);
   }
   await db.update(users).set(values).where(eq(users.id, req.params.id));
@@ -735,4 +738,8 @@ app.use((err, req, res, next) => {
         : "The request could not be completed. Please try again or contact your administrator.",
   });
 });
+// Complete configured administrator setup when the deployed server starts.
+if (process.env.SUPER_ADMIN_USERNAME && process.env.SUPER_ADMIN_PASSWORD) {
+  await bootstrap();
+}
 export default app;
