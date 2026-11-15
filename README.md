@@ -2,7 +2,7 @@
 
 A mobile-first monitoring, evaluation, accountability, and learning workspace for Liberia’s Presidential Clean Cities Initiative, Ministry of State for Presidential Affairs.
 
-The portal includes a clearly labelled public preview with illustrative reporting data. Official user accounts, reports, location records, audit events, survey responses, and community feedback are stored in Netlify Database. Sample reports are never inserted into the operational database.
+The portal includes a clearly labelled public preview with illustrative reporting data. Official user accounts, reports, location records, audit events, survey responses, and community feedback are stored in Netlify Database. Sample reports are never inserted into the operational database. The public preview uses 24 illustrative reports across October 5–November 15, 2026. Signed-in users can choose **Show demo data** to explore the same reports and **Show live data** to return to operational records. Demo reports are read-only; dashboard KPIs, trends, filters, and overview exports use the selected dataset.
 
 ## Technology and deployment
 

@@ -89,6 +89,8 @@ import Papa from "papaparse";
 import { Button } from "./components/ui/button";
 import {
   targets,
+  demoReports,
+  demoLocations,
   roles,
   aggregate,
   fmt,
@@ -181,7 +183,8 @@ function App() {
     [online, setOnline] = useState(navigator.onLine),
     [filters, setFilters] = useState<any>({}),
     [search, setSearch] = useState(""),
-    [notifications, setNotifications] = useState(false);
+    [notifications, setNotifications] = useState(false),
+    [demoView, setDemoView] = useState(false);
   const notify = (m: string) => {
     setToast(m);
     setTimeout(() => setToast(""), 5500);
@@ -293,7 +296,10 @@ function App() {
       prior?.focus();
     };
   }, [!!modal, login]);
-  const filtered = reports.filter(
+  const preview = !user || demoView;
+  const visibleReports = preview ? demoReports : reports;
+  const visibleLocations = preview ? demoLocations : locations;
+  const filtered = visibleReports.filter(
     (r) =>
       Object.entries(filters).every(
         ([k, v]) =>
@@ -580,9 +586,14 @@ function App() {
               </p>
             </div>
             <div className="heading-actions">
+              {user && (
+                <Button variant="outline" onClick={() => { setDemoView(!demoView); setFilters({}); }}>
+                  <Eye size={16} /> {demoView ? "Show live data" : "Show demo data"}
+                </Button>
+              )}
               {page === "Dashboard" && (
                 <Button variant="outline" onClick={() => exportTable(filtered)}>
-                  <Download size={16} /> Export overview
+                  <Download size={16} /> {preview ? "Export demo overview" : "Export overview"}
                 </Button>
               )}
               {["Dashboard", "Field reports"].includes(page) && (
@@ -592,17 +603,17 @@ function App() {
               )}
             </div>
           </div>
-          {!user && (
+          {preview && (
             <div className="demo-banner">
               <span>
                 <Eye size={15} />
-                <strong>Preview workspace</strong>
+                <strong>Demo data · Oct 5–Nov 15, 2026</strong>
                 <span>
-                  Explore illustrative data. Sign in to manage your initiative.
+                  Illustrative reports only. Demo data is never saved to operational records.
                 </span>
               </span>
-              <button onClick={() => setLogin(true)}>
-                Sign in <ArrowRight size={14} />
+              <button onClick={() => user ? setDemoView(false) : setLogin(true)}>
+                {user ? "Show live data" : "Sign in"} <ArrowRight size={14} />
               </button>
             </div>
           )}
@@ -636,8 +647,8 @@ function App() {
                     options={Array.from(
                       new Set(
                         (k === "team"
-                          ? reports
-                          : locations.filter(
+                          ? visibleReports
+                          : visibleLocations.filter(
                               (l) =>
                                 l.type ===
                                 ["County", "City", "District", "Community"][i],
@@ -698,7 +709,7 @@ function App() {
           {page === "Dashboard" && (
             <Dashboard
               reports={filtered}
-              demo={!user}
+              demo={preview}
               onNew={newReport}
               onPage={changePage}
               onReport={setModal}
@@ -713,12 +724,12 @@ function App() {
             />
           )}
           {page === "Map & coverage" && (
-            <MapView reports={filtered} locations={locations} />
+            <MapView reports={filtered} locations={visibleLocations} />
           )}
           {page === "Gender demography" && <GenderReport reports={filtered} />}
           {(page === "Custom forms" || (page === "Data Manager" && user.role === "Super Admin")) && <DataManager key={user.id + page} user={user} />}
           {page === "Analytics" && (
-            <Analytics reports={filtered} locations={locations} />
+            <Analytics reports={filtered} locations={visibleLocations} />
           )}
           {page === "MEAL tools" && (
             <Meal user={user} notify={notify} onLogin={() => setLogin(true)} />
@@ -787,9 +798,9 @@ function App() {
       {modal && (
         <ReportEditor
           report={modal}
-          reports={reports}
-          user={user}
-          locations={locations}
+          reports={modal.ownerId === "demo" ? demoReports : reports}
+          user={modal.ownerId === "demo" ? null : user}
+          locations={modal.ownerId === "demo" ? demoLocations : locations}
           onClose={() => setModal(null)}
           notify={notify}
           onSave={async (r: any) => {
@@ -851,15 +862,6 @@ function Dashboard({ reports, demo, onNew, onPage, onReport }: any) {
       target: chart === "Waste removed" ? 420 : 20,
     };
   });
-  if (demo) {
-    const a =
-      chart === "Waste removed"
-        ? [138, 186, 164, 279, 312, 386]
-        : [8, 12, 11, 16, 19, 23];
-    weeks.forEach((w, i) => {
-      w.actual = a[i];
-    });
-  }
   return (
     <>
       <div className="section-label">
@@ -878,7 +880,7 @@ function Dashboard({ reports, demo, onNew, onPage, onReport }: any) {
       </div>
       <div className="kpi-grid">
         {targets.slice(0, 4).map((t, i) => {
-          const value = demo ? [86, 1842, 72, 94.2][i] : totals[t.key];
+          const value = totals[t.key];
           const percent = (value / t.target) * 100;
           const Icon = [Building2, Trash2, Droplets, UsersRound][i];
           return (
@@ -1145,9 +1147,7 @@ function Dashboard({ reports, demo, onNew, onPage, onReport }: any) {
             <div>
               <h3>Every action adds up</h3>
               <p>
-                {demo
-                  ? "1,842 metric tons of waste removed. That’s 73.7% of the programme target."
-                  : `${fmt(totals.waste)} metric tons of waste removed in approved reports.`}
+                {`${fmt(totals.waste)} metric tons of waste removed in ${demo ? "illustrative approved" : "approved"} reports.`}
               </p>
               <button onClick={() => onPage("Analytics")}>
                 View performance <ArrowUpRight size={12} />
@@ -1161,9 +1161,7 @@ function Dashboard({ reports, demo, onNew, onPage, onReport }: any) {
             <div>
               <h3>Safety stays a priority</h3>
               <p>
-                {demo
-                  ? "PPE compliance is close to target. Follow up with teams below the 95% threshold."
-                  : `${reports.filter((r) => Number(r.data.metrics?.ppe) < 95).length} reports record PPE compliance below 95%.`}
+                {`${reports.filter((r) => Number(r.data.metrics?.ppe) < 95).length} ${demo ? "illustrative reports" : "reports"} record PPE compliance below 95%.`}
               </p>
               <button onClick={() => onPage("Analytics")}>
                 Review compliance <ArrowUpRight size={12} />

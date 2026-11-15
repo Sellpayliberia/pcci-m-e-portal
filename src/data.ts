@@ -109,6 +109,9 @@ export const demoReports = Array.from({ length: 24 }, (_, i) => {
     "Returned",
     "Admin Approved",
   ];
+  const periodEnd = new Date(Date.UTC(2026, 10, 15 - Math.floor(i / 4) * 7));
+  const periodStart = new Date(periodEnd);
+  periodStart.setUTCDate(periodStart.getUTCDate() - (i % 3 ? 6 : 0));
   return {
     id: `sample-${i}`,
     number: `PCCI-2026-${String(148 - i).padStart(4, "0")}`,
@@ -127,8 +130,8 @@ export const demoReports = Array.from({ length: 24 }, (_, i) => {
     community: demoLocations.find((p) => p.id === l.parentId)?.name,
     status: statuses[i % 6],
     version: 1,
-    createdAt: new Date(2026, 10, 14 - Math.floor(i / 2)).toISOString(),
-    updatedAt: new Date(2026, 10, 14 - Math.floor(i / 2)).toISOString(),
+    createdAt: periodEnd.toISOString(),
+    updatedAt: periodEnd.toISOString(),
     data: {
       type: i % 3 ? "Weekly" : "Daily",
       supervisor: [
@@ -138,8 +141,8 @@ export const demoReports = Array.from({ length: 24 }, (_, i) => {
         "Samuel G. Wesseh",
       ][i % 4],
       phone: "+231 77 000 0000",
-      periodStart: `2026-11-${String(Math.max(1, 8 - Math.floor(i / 4) * 2)).padStart(2, "0")}`,
-      periodEnd: `2026-11-${String(14 - Math.floor(i / 4) * 2).padStart(2, "0")}`,
+      periodStart: periodStart.toISOString().slice(0, 10),
+      periodEnd: periodEnd.toISOString().slice(0, 10),
       latitude: Number(l.latitude) + (i % 3) * 0.008,
       longitude: Number(l.longitude) + (i % 3) * 0.012,
       metrics: {
@@ -169,7 +172,7 @@ export const demoReports = Array.from({ length: 24 }, (_, i) => {
           weight: 55 + i * 2.1,
           before: "Poor",
           after: i % 3 ? "Good" : "Fair",
-          date: "2026-11-14",
+          date: periodEnd.toISOString().slice(0, 10),
           latitude: l.latitude,
           longitude: l.longitude,
         },
