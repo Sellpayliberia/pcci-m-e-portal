@@ -371,7 +371,11 @@ function App() {
     );
   return (
     <div className="app">
-      <aside className={mobile ? "sidebar open" : "sidebar"}>
+      <aside
+        className={mobile ? "sidebar open" : "sidebar"}
+        tabIndex={0}
+        aria-label="Main menu"
+      >
         <a href="/" className="brand">
           <span className="brand-mark">
             <Flag size={23} fill="currentColor" />
