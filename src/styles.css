@@ -140,6 +140,30 @@ svg {
   display: flex;
   flex-direction: column;
   padding: 30px 17px 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: #a2b0c4 var(--navy);
+}
+.sidebar > * {
+  flex-shrink: 0;
+}
+.sidebar::-webkit-scrollbar {
+  width: 12px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: var(--navy);
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: #a2b0c4;
+  border: 3px solid var(--navy);
+  border-radius: 8px;
+}
+.sidebar:focus-visible {
+  outline: 2px solid #a2b0c4;
+  outline-offset: -2px;
 }
 .brand {
   display: flex;
