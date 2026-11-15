@@ -32,13 +32,13 @@ Set `RESEND_API_KEY`, `EMAIL_FROM`, and `WEEKLY_SUMMARY_TO` to enable weekly ema
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SESSION_SECRET`       | Cryptographically random JWT signing secret, at least 32 characters. A secret was generated and configured for production and deploy previews during setup. |
 | `SUPER_ADMIN_USERNAME` | Username for the first Super Admin. Case-insensitive; stored in lowercase.                                                                                  |
-| `SUPER_ADMIN_PASSWORD` | Initial password, at least 12 characters and no more than 72 UTF-8 bytes because bcrypt truncates beyond that limit. Store as a secret.                     |
+| `SUPER_ADMIN_PASSWORD` | Initial password, at least 10 characters and no more than 72 UTF-8 bytes because bcrypt truncates beyond that limit. Store as a secret.                     |
 | `SUPER_ADMIN_NAME`     | Optional display name; defaults to PCCI Administrator.                                                                                                      |
 | `RESEND_API_KEY`       | Secret Resend API key for scheduled weekly summary delivery.                                                                                                |
 | `EMAIL_FROM`           | Sender email address on a verified Resend domain.                                                                                                           |
 | `WEEKLY_SUMMARY_TO`    | Comma-separated, authorized recipients for the national summary.                                                                                            |
 
-The first login request seeds the initial Super Admin only when no Super Admin exists. Changing the bootstrap password variable later does not reset an existing account. Set up subsequent accounts from **Users & roles**. Remove bootstrap credentials from the environment after successfully establishing administrator access if your operational policy requires it.
+Server startup creates the initial active Super Admin with unrestricted geographic access when bootstrap settings are configured and no Super Admin exists. Login also retries bootstrap safely. Changing the bootstrap password variable later does not reset an existing account. Set up subsequent accounts from **Users & roles**. Remove bootstrap credentials from the environment after successfully establishing administrator access if your operational policy requires it.
 
 Database connection and Blobs access are supplied by Netlify; no database URL or storage token is required in application code. Do not expose any server variables through a `VITE_` prefix.
 

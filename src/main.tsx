@@ -2102,7 +2102,7 @@ function Login({ onClose, onLogin, required = false }: any) {
             <div className="notice">
               For account security, a Super Admin resets your password from
               Users & roles after verifying your identity. Passwords must have
-              at least 12 characters.
+              at least 10 characters.
             </div>
             <Button variant="outline" onClick={() => setReset(false)}>
               Back to sign in
@@ -3964,11 +3964,11 @@ function SettingsPanel({ user, onLogin, onLogout, notify }: any) {
                   required
                 />
               </Field>
-              <Field label="New password (12+ characters)">
+              <Field label="New password (10+ characters)">
                 <input
                   name="password"
                   type="password"
-                  minLength={12}
+                  minLength={10}
                   required
                   autoComplete="new-password"
                 />
