@@ -82,3 +82,22 @@ export const authConfig = pgTable("auth_config", {
   id: text("id").primaryKey(),
   signingKey: text("signing_key").notNull(),
 });
+
+export const customTables = pgTable("custom_tables", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  fields: jsonb("fields").notNull(),
+  permissions: jsonb("permissions").notNull(),
+  version: integer("version").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export const customRecords = pgTable("custom_records", {
+  id: text("id").primaryKey(),
+  tableId: text("table_id").notNull().references(() => customTables.id, { onDelete: "cascade" }),
+  ownerId: text("owner_id").notNull().references(() => users.id),
+  county: text("county").notNull(),
+  city: text("city").notNull(),
+  data: jsonb("data").notNull(),
+  version: integer("version").notNull().default(1),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});

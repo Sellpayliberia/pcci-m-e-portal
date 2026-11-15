@@ -104,12 +104,15 @@ import {
   reportPDF,
 } from "./lib";
 import "./styles.css";
+import { DataManager, GenderReport } from "./programme-tools";
 import { siteName, siteDescription } from "./site";
 document.title = siteName + " · Presidential Clean Cities Initiative";
 document
   .querySelector('meta[name="description"]')
   ?.setAttribute("content", siteDescription);
 const nav = [
+  { label: "Gender demography", icon: UsersRound },
+  { label: "Custom forms", icon: ClipboardList },
   { label: "Dashboard", icon: LayoutDashboard },
   { label: "Field reports", icon: ClipboardList },
   { label: "Map & coverage", icon: MapPinned },
@@ -406,6 +409,7 @@ function App() {
         <div className="nav-heading administration">ADMINISTRATION</div>
         {[
           { label: "Users & roles", icon: Users },
+          { label: "Data Manager", icon: Layers },
           { label: "Locations", icon: MapPin },
           { label: "Audit log", icon: ShieldCheck },
           { label: "Settings", icon: Settings },
@@ -414,7 +418,7 @@ function App() {
             (n) =>
               !user ||
               n.label === "Settings" ||
-              (n.label === "Users & roles"
+              (["Users & roles", "Data Manager"].includes(n.label)
                 ? user.role === "Super Admin"
                 : ["Super Admin", "Admin/M&E Officer"].includes(user.role)),
           )
@@ -602,6 +606,7 @@ function App() {
             "Dashboard",
             "Field reports",
             "Analytics",
+            "Gender demography",
             "Map & coverage",
           ].includes(page) && (
             <div className="filters">
@@ -706,6 +711,8 @@ function App() {
           {page === "Map & coverage" && (
             <MapView reports={filtered} locations={locations} />
           )}
+          {page === "Gender demography" && <GenderReport reports={filtered} />}
+          {(page === "Custom forms" || (page === "Data Manager" && user.role === "Super Admin")) && <DataManager key={user.id + page} user={user} />}
           {page === "Analytics" && (
             <Analytics reports={filtered} locations={locations} />
           )}

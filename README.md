@@ -97,3 +97,17 @@ Analytics include target attainment, city and team rankings, gender attendance, 
 Administrators can create indicators with baselines/targets and design surveys using text, number, yes/no, rating, and date questions. Responses are validated and persisted. Grievances, lessons learned, and actions support Open, In progress, Resolved, and Closed statuses, assigned owners, and due dates. The public feedback page accepts anonymous community concerns, returns a reference ID, and appears through a QR code in MEAL tools. The reference ID is not a public status lookup or authentication credential.
 
 The `weekly-summary` Netlify Function runs at 08:00 UTC each Monday on production. It emails a national, aggregate summary of reports updated in the preceding seven days through Resend, using an idempotency key per date, and records successful delivery in the audit log. Delivery requires the configured API key, verified sender, and approved recipients. Email delivery, database migrations, browser workflows, and platform integration still require deployment/runtime verification.
+
+## Gender demography report
+
+Open **Gender demography** to review assigned and present male/female attendance, attendance rates, participation shares, and PPE compliance from approved reports. The shared date, geography, and team filters apply to the report and its CSV/PDF exports. A county/city breakdown accompanies programme totals. Rates use summed counts (present / assigned; compliant / present), and an empty denominator displays a dash. Counts represent attendance occurrences, not unique participants or population demographics. Daily/weekly periods can overlap; the portal does not deduplicate them. The current form collects male/female categories only; no age or disability data is inferred.
+
+## Custom tables and forms
+
+Super Admins can open **Data Manager**, create a named table, define up to 30 fields (text, number, date, or yes/no), and grant create, read, update, and delete permissions independently to each existing role. All permissions default to denied for other roles; Super Admins retain full access. Each table automatically has a data-entry form and a record register under **Custom forms**. Every record includes county and city. Existing county/city scope applies on the server, and Team Supervisors can access only their own records. A create-only role can submit a form without reading its saved records. Editing/deleting through the register requires read access as well as the respective action permission.
+
+Field keys, types, and required settings are fixed after creation to protect existing records; titles and role permissions remain editable. Custom records do not change operational report workflows or feed official KPIs. Records and form settings use version checks to reject conflicting updates. On conflict, reload and review the current record before reapplying edits. Changes are audited. Deleting a table requires typing its title and permanently deletes its records. Accounts owning custom records must be deactivated rather than deleted.
+
+The custom definitions, permissions, and records are stored in Netlify Database; a generated additive migration creates their tables without changing earlier migrations. No sample records are inserted.
+
+Targeted verification: `node --experimental-strip-types --test tests/custom-forms.test.mjs` checks typed values, definition validation, independent role grants, geographic/ownership scope, and API permission enforcement.
