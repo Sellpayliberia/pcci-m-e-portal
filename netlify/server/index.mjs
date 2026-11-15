@@ -2,14 +2,14 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
-import { randomUUID, createHash } from "node:crypto";
+import { randomUUID, createHash, randomBytes } from "node:crypto";
 import { drizzle } from "drizzle-orm/netlify-db";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { getStore } from "@netlify/blobs";
 import * as schema from "../../db/schema.ts";
-import { reportInput, userInput } from "./validation.mjs";
+import { reportInput, userInput, registrationInput } from "./validation.mjs";
 import { seedLocations } from "./seed.mjs";
-const { users, locations, reports, audits, meal, attempts, files } = schema;
+const { users, locations, reports, audits, meal, attempts, files, authConfig } = schema;
 const db = drizzle({ schema });
 const app = express();
 app.disable("x-powered-by");
@@ -28,10 +28,14 @@ const clean = (u) => {
   const { passwordHash, ...safe } = u;
   return safe;
 };
-const secret = () => {
-  if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)
-    throw Error("Authentication configuration is incomplete");
-  return new TextEncoder().encode(process.env.SESSION_SECRET);
+const bootstrapUsername = (process.env.SUPER_ADMIN_USERNAME || "webmasterliberia@gmail.com").trim().toLowerCase();
+const secret = async () => {
+  if (process.env.SESSION_SECRET?.length >= 32)
+    return new TextEncoder().encode(process.env.SESSION_SECRET);
+  // Insert once across concurrent instances; read the winning key from durable storage.
+  await db.insert(authConfig).values({ id: "session", signingKey: randomBytes(48).toString("base64url") }).onConflictDoNothing();
+  const [config] = await db.select().from(authConfig).where(eq(authConfig.id, "session"));
+  return new TextEncoder().encode(config.signingKey);
 };
 async function audit(u, action, entity = "") {
   await db.insert(audits).values({
@@ -50,11 +54,11 @@ function allowed(u, r) {
 }
 async function bootstrap() {
   await db.insert(locations).values(seedLocations()).onConflictDoNothing();
-  if (process.env.SUPER_ADMIN_USERNAME && process.env.SUPER_ADMIN_PASSWORD) {
+  if (bootstrapUsername && process.env.SUPER_ADMIN_PASSWORD) {
     const [existing] = await db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.role, "Super Admin"))
+      .where(eq(users.username, bootstrapUsername))
       .limit(1);
     if (!existing) {
       if (
@@ -66,7 +70,7 @@ async function bootstrap() {
         .insert(users)
         .values({
           id: randomUUID(),
-          username: process.env.SUPER_ADMIN_USERNAME.toLowerCase(),
+          username: bootstrapUsername,
           name: process.env.SUPER_ADMIN_NAME || "PCCI Administrator",
           passwordHash: await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD, 12),
           role: "Super Admin",
@@ -75,6 +79,8 @@ async function bootstrap() {
           city: null,
         })
         .onConflictDoNothing();
+    } else {
+      await db.update(users).set({ role: "Super Admin", active: true, approvalStatus: "Approved", county: null, city: null }).where(eq(users.id, existing.id));
     }
   }
 }
@@ -95,7 +101,7 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 app.get("/api/config", (req, res) =>
   res.json({
     administratorBootstrapConfigured: Boolean(
-      process.env.SUPER_ADMIN_USERNAME && process.env.SUPER_ADMIN_PASSWORD,
+      bootstrapUsername && process.env.SUPER_ADMIN_PASSWORD,
     ),
     weeklyEmailConfigured: Boolean(
       process.env.RESEND_API_KEY &&
@@ -104,8 +110,25 @@ app.get("/api/config", (req, res) =>
     ),
   }),
 );
+app.post("/api/register", async (req, res) => {
+  const parsed = registrationInput.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Enter your full name, a valid email, and a password of 10–72 characters (maximum 72 UTF-8 bytes)." });
+  const key = createHash("sha256").update(`register:${req.ip}`).digest("hex");
+  const [gate] = await db.insert(attempts).values({ id: key, count: 1 }).onConflictDoUpdate({
+    target: attempts.id,
+    set: { count: sql`CASE WHEN ${attempts.updatedAt} < NOW() - INTERVAL '15 minutes' THEN 1 ELSE ${attempts.count} + 1 END`, updatedAt: sql`CASE WHEN ${attempts.updatedAt} < NOW() - INTERVAL '15 minutes' THEN NOW() ELSE ${attempts.updatedAt} END` },
+  }).returning();
+  if (gate.count > 5) return res.status(429).json({ error: "Too many registration requests. Try again in 15 minutes." });
+  const b = parsed.data;
+  if (b.username === bootstrapUsername)
+    return res.status(400).json({ error: "This email is reserved for the portal administrator." });
+  await db.insert(users).values({ id: randomUUID(), name: b.name, username: b.username,
+    passwordHash: await bcrypt.hash(b.password, 12), role: "Viewer", active: false,
+    approvalStatus: "Pending", county: null, city: null }).onConflictDoNothing();
+  res.status(202).json({ message: "Registration received. Contact webmasterliberia@gmail.com for approval before signing in." });
+});
 app.post("/api/login", async (req, res) => {
-  if (!process.env.SUPER_ADMIN_USERNAME || !process.env.SUPER_ADMIN_PASSWORD) {
+  if (!process.env.SUPER_ADMIN_PASSWORD) {
     const [existing] = await db.select({ id: users.id }).from(users).limit(1);
     if (!existing)
       return res
@@ -116,7 +139,7 @@ app.post("/api/login", async (req, res) => {
         });
   }
   await bootstrap();
-  const username = String(req.body.username || "").toLowerCase();
+  const username = String(req.body.username || "").trim().toLowerCase();
   const key = createHash("sha256")
     .update(`${req.ip}:${username}`)
     .digest("hex");
@@ -132,6 +155,7 @@ app.post("/api/login", async (req, res) => {
   const [u] = await db.select().from(users).where(eq(users.username, username));
   if (
     !u?.active ||
+    u.approvalStatus !== "Approved" ||
     !(await bcrypt.compare(String(req.body.password || ""), u.passwordHash))
   ) {
     await db
@@ -155,7 +179,7 @@ app.post("/api/login", async (req, res) => {
     .setSubject(u.id)
     .setIssuedAt()
     .setExpirationTime("30m")
-    .sign(secret());
+    .sign(await secret());
   res.cookie("pcci_session", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV !== "development",
@@ -170,7 +194,7 @@ app.post("/api/login", async (req, res) => {
 app.use("/api", async (req, res, next) => {
   let payload;
   try {
-    ({ payload } = await jwtVerify(req.cookies.pcci_session || "", secret(), {
+    ({ payload } = await jwtVerify(req.cookies.pcci_session || "", await secret(), {
       algorithms: ["HS256"],
     }));
   } catch {
@@ -179,7 +203,7 @@ app.use("/api", async (req, res, next) => {
       .json({ error: "Please sign in. Sessions expire after 30 minutes." });
   }
   const [u] = await db.select().from(users).where(eq(users.id, payload.sub));
-  if (!u?.active || u.sessionVersion !== payload.v)
+  if (!u?.active || u.approvalStatus !== "Approved" || u.sessionVersion !== payload.v)
     return res
       .status(401)
       .json({ error: "Your account session expired. Please sign in again." });
@@ -291,6 +315,10 @@ app.patch("/api/users/:id", async (req, res) => {
   if (!parsed.success)
     return res.status(400).json({ error: "Invalid user details" });
   const b = parsed.data;
+  const [target] = await db.select().from(users).where(eq(users.id, req.params.id));
+  if (!target) return res.sendStatus(404);
+  if (target.approvalStatus === "Pending" && req.user.username !== bootstrapUsername)
+    return res.status(403).json({ error: "Only the designated Super Admin can approve registration requests." });
   if (
     req.params.id === req.user.id &&
     (b.active === false || (b.role && b.role !== "Super Admin"))
@@ -300,6 +328,10 @@ app.patch("/api/users/:id", async (req, res) => {
       .json({ error: "You cannot remove your own administrator access" });
   if (b.role && !roles.includes(b.role)) return res.sendStatus(400);
   const values = { sessionVersion: sql`${users.sessionVersion} + 1` };
+  if (b.active === true && target.approvalStatus === "Pending") {
+    values.approvalStatus = "Approved";
+    await audit(req.user, "Registration approved", target.id);
+  }
   for (const k of ["name", "role", "county", "city", "active"])
     if (b[k] !== undefined) values[k] = b[k];
   if (b.password) {
@@ -739,7 +771,7 @@ app.use((err, req, res, next) => {
   });
 });
 // Complete configured administrator setup when the deployed server starts.
-if (process.env.SUPER_ADMIN_USERNAME && process.env.SUPER_ADMIN_PASSWORD) {
+if (bootstrapUsername && process.env.SUPER_ADMIN_PASSWORD) {
   await bootstrap();
 }
 export default app;
