@@ -2094,7 +2094,7 @@ function Login({ onClose, onLogin, required = false }: any) {
           <Flag size={26} />
         </span>
         <div className="eyebrow">PRESIDENTIAL CLEAN CITIES INITIATIVE</div>
-        <h2>{reset ? "Recover your account" : register ? "Request portal access" : "Welcome to your workspace."}</h2>
+        <h2>{reset ? "Recover your account" : register ? "Request portal access" : "Welcome to your PCCI Workspace."}</h2>
         <p>
           {reset
             ? "Contact your Super Admin for a secure password reset."
